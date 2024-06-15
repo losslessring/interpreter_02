@@ -1,2 +1,2 @@
-# interpreter_02
-Lisp interpreter
+# interpreter_01
+Interpreter of a programming language
