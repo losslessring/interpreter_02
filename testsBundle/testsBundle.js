@@ -679,6 +679,98 @@ var splitBy_test = () => {
   });
 };
 
+// src/parser/tokensToAST/tokensToAST.test.js
+var tokensToAST_test_exports = {};
+__export(tokensToAST_test_exports, {
+  tokensToAST_test: () => tokensToAST_test
+});
+
+// src/parser/parseFunction/parseFunction.js
+function parseFunction(expr, tokens) {
+  const [head, ...tail2] = tokens;
+  let functionNode = {
+    type: "function",
+    name: head,
+    args: []
+  };
+  while (head !== ")") {
+    let arg = parseExpression(tokens.slice(2));
+    functionNode.args.push(arg.expr);
+  }
+  return parseFunction(functionNode, tokens.slice(1));
+}
+
+// src/parser/parseExpression/parseExpression.js
+function parseExpression(tokens) {
+  const [head, ...tail2] = tokens;
+  if (head === "(") {
+    return parseFunction(tail2);
+  } else if (typeof Number(head) === "number") {
+    return {
+      type: "number",
+      value: Number(head)
+    };
+  }
+}
+
+// src/parser/tokensToAST/tokensToAST.js
+function tokensToAST(tokens) {
+  const data = ["(", "number", "100", ")"];
+  if (tokens[0] === "(") {
+    return parseExpression(tokens.slice(1, tokens.length - 1));
+  }
+}
+
+// src/parser/tokensToAST/tokensToAST.test.js
+var tokensToAST_test = () => {
+  describe("tokens to AST", () => {
+    it("tokens to AST", () => {
+      const tokens = ["(", "100", ")"];
+      const result = tokensToAST(tokens);
+      const expected = {
+        type: "number",
+        value: 100
+      };
+      expect(result).toBe(expected);
+    });
+  });
+};
+
+// src/parser/parseFunction/parseFunction.test.js
+var parseFunction_test_exports = {};
+
+// src/parser/parseExpression/parseExpression.test.js
+var parseExpression_test_exports = {};
+__export(parseExpression_test_exports, {
+  parseExpression_test: () => parseExpression_test
+});
+var parseExpression_test = () => {
+  describe("parse expression", () => {
+    it("parse flat expression", () => {
+      const tokens = ["100"];
+      const result = parseExpression(tokens);
+      const expected = {
+        type: "number",
+        value: 100
+      };
+      expect(result).toBe(expected);
+    });
+    it("parse function expression", () => {
+      const tokens = ["(", "add", "100", "200", ")"];
+      const result = parseExpression(tokens);
+      const expected = {
+        type: "function",
+        name: "add",
+        args: [
+          { type: "number", value: 100 },
+          { type: "number", value: 200 }
+        ]
+      };
+      expect(result).toBe(expected);
+    });
+  });
+};
+
 // src/utils/string/keepOnlyOneCharInRow/keepOnlyOneCharInRow.test.js
 var keepOnlyOneCharInRow_test_exports = {};
 __export(keepOnlyOneCharInRow_test_exports, {
@@ -745,7 +837,7 @@ var sum_test = () => {
 };
 
 // testsAutoImport.js
-var tests = { ...splitToTokens_test_exports, ...splitBy_test_exports, ...keepOnlyOneCharInRow_test_exports, ...sum_test_exports };
+var tests = { ...splitToTokens_test_exports, ...splitBy_test_exports, ...tokensToAST_test_exports, ...parseFunction_test_exports, ...parseExpression_test_exports, ...keepOnlyOneCharInRow_test_exports, ...sum_test_exports };
 export {
   tests
 };
