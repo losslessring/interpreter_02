@@ -685,55 +685,50 @@ __export(tokensToAST_test_exports, {
   tokensToAST_test: () => tokensToAST_test
 });
 
-// src/parser/parseFunction/parseFunction.js
-function parseFunction(expr, tokens) {
-  const [head, ...tail2] = tokens;
-  let functionNode = {
-    type: "function",
-    name: head,
-    args: []
-  };
-  while (head !== ")") {
-    let arg = parseExpression(tokens.slice(2));
-    functionNode.args.push(arg.expr);
-  }
-  return parseFunction(functionNode, tokens.slice(1));
-}
-
 // src/parser/parseExpression/parseExpression.js
-function parseExpression(tokens) {
+function parseExpression(obj) {
+  let tree = obj.tree;
+  let tokens = obj.tokens;
+  let currentExpressionNode = obj.currentExpressionNode;
   const [head, ...tail2] = tokens;
-  if (head === "(") {
-    return parseFunction(tail2);
-  } else if (typeof Number(head) === "number") {
-    return {
-      type: "number",
-      value: Number(head)
-    };
+  if (tokens.length === 0) {
+    return tree;
   }
-}
-
-// src/parser/tokensToAST/tokensToAST.js
-function tokensToAST(tokens) {
-  const data = ["(", "number", "100", ")"];
-  if (tokens[0] === "(") {
-    return parseExpression(tokens.slice(1, tokens.length - 1));
+  if (head === "(" && !tree) {
+    tree = {
+      type: "expression",
+      value: []
+    };
+    return parseExpression({
+      tree,
+      currentExpressionNode: tree,
+      tokens: tail2
+    });
+  }
+  if (head === "(") {
+    let newTreeExpressionNode = {
+      type: "expression",
+      value: []
+    };
+    tree.value.push(newTreeExpressionNode);
+    return parseExpression({
+      tree,
+      currentExpressionNode: newTreeExpressionNode,
+      tokens: tail2
+    });
+  } else if (head === ")") {
+    return parseExpression({ tree, currentExpressionNode, tokens: tail2 });
+  } else if (!isNaN(parseFloat(head))) {
+    currentExpressionNode.value.push({ type: "number", value: head });
+    return parseExpression({ tree, currentExpressionNode, tokens: tail2 });
+  } else if (isNaN(parseFloat(head))) {
+    currentExpressionNode.value.push({ type: "string", value: head });
+    return parseExpression({ tree, currentExpressionNode, tokens: tail2 });
   }
 }
 
 // src/parser/tokensToAST/tokensToAST.test.js
 var tokensToAST_test = () => {
-  describe("tokens to AST", () => {
-    it("tokens to AST", () => {
-      const tokens = ["(", "100", ")"];
-      const result = tokensToAST(tokens);
-      const expected = {
-        type: "number",
-        value: 100
-      };
-      expect(result).toBe(expected);
-    });
-  });
 };
 
 // src/parser/parseFunction/parseFunction.test.js
@@ -746,24 +741,45 @@ __export(parseExpression_test_exports, {
 });
 var parseExpression_test = () => {
   describe("parse expression", () => {
-    it("parse flat expression", () => {
-      const tokens = ["100"];
-      const result = parseExpression(tokens);
+    it("parse function expression", () => {
+      const tokens = ["(", "add", "100", "200", ")"];
+      const result = parseExpression({ tokens });
       const expected = {
-        type: "number",
-        value: 100
+        type: "expression",
+        value: [
+          { type: "string", value: "add" },
+          { type: "number", value: "100" },
+          { type: "number", value: "200" }
+        ]
       };
       expect(result).toBe(expected);
     });
-    it("parse function expression", () => {
-      const tokens = ["(", "add", "100", "200", ")"];
-      const result = parseExpression(tokens);
+    it("parse nested function expression", () => {
+      const tokens = [
+        "(",
+        "add",
+        "100",
+        "(",
+        "add",
+        "300",
+        "200",
+        ")",
+        ")"
+      ];
+      const result = parseExpression({ tokens });
       const expected = {
-        type: "function",
-        name: "add",
-        args: [
-          { type: "number", value: 100 },
-          { type: "number", value: 200 }
+        type: "expression",
+        value: [
+          { type: "string", value: "add" },
+          { type: "number", value: "100" },
+          {
+            type: "expression",
+            value: [
+              { type: "string", value: "add" },
+              { type: "number", value: "300" },
+              { type: "number", value: "200" }
+            ]
+          }
         ]
       };
       expect(result).toBe(expected);
