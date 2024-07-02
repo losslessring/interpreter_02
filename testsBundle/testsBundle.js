@@ -690,18 +690,24 @@ function parseExpression(obj) {
   let tree = obj.tree;
   let tokens = obj.tokens;
   let currentExpressionNode = obj.currentExpressionNode;
+  let expressionNodesStack = obj.expressionNodesStack;
   const [head, ...tail2] = tokens;
   if (tokens.length === 0) {
     return tree;
+  }
+  if (!expressionNodesStack) {
+    expressionNodesStack = [];
   }
   if (head === "(" && !tree) {
     tree = {
       type: "expression",
       value: []
     };
+    expressionNodesStack.push(tree);
     return parseExpression({
       tree,
-      currentExpressionNode: tree,
+      currentExpressionNode: expressionNodesStack[expressionNodesStack.length - 1],
+      expressionNodesStack,
       tokens: tail2
     });
   }
@@ -711,19 +717,37 @@ function parseExpression(obj) {
       value: []
     };
     tree.value.push(newTreeExpressionNode);
+    expressionNodesStack.push(newTreeExpressionNode);
     return parseExpression({
       tree,
-      currentExpressionNode: newTreeExpressionNode,
+      currentExpressionNode: expressionNodesStack[expressionNodesStack.length - 1],
+      expressionNodesStack,
       tokens: tail2
     });
   } else if (head === ")") {
-    return parseExpression({ tree, currentExpressionNode, tokens: tail2 });
+    expressionNodesStack.pop();
+    return parseExpression({
+      tree,
+      currentExpressionNode: expressionNodesStack[expressionNodesStack.length - 1],
+      expressionNodesStack,
+      tokens: tail2
+    });
   } else if (!isNaN(parseFloat(head))) {
     currentExpressionNode.value.push({ type: "number", value: head });
-    return parseExpression({ tree, currentExpressionNode, tokens: tail2 });
+    return parseExpression({
+      tree,
+      currentExpressionNode,
+      expressionNodesStack,
+      tokens: tail2
+    });
   } else if (isNaN(parseFloat(head))) {
     currentExpressionNode.value.push({ type: "string", value: head });
-    return parseExpression({ tree, currentExpressionNode, tokens: tail2 });
+    return parseExpression({
+      tree,
+      currentExpressionNode,
+      expressionNodesStack,
+      tokens: tail2
+    });
   }
 }
 
@@ -780,6 +804,38 @@ var parseExpression_test = () => {
               { type: "number", value: "200" }
             ]
           }
+        ]
+      };
+      expect(result).toBe(expected);
+    });
+    it("parse nested function expression", () => {
+      const tokens = [
+        "(",
+        "add",
+        "100",
+        "(",
+        "add",
+        "300",
+        "200",
+        ")",
+        "500",
+        ")"
+      ];
+      const result = parseExpression({ tokens });
+      const expected = {
+        type: "expression",
+        value: [
+          { type: "string", value: "add" },
+          { type: "number", value: "100" },
+          {
+            type: "expression",
+            value: [
+              { type: "string", value: "add" },
+              { type: "number", value: "300" },
+              { type: "number", value: "200" }
+            ]
+          },
+          { type: "number", value: "500" }
         ]
       };
       expect(result).toBe(expected);
