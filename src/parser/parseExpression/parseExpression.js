@@ -11,7 +11,7 @@ export function parseExpression(obj) {
     //     "------------------------------------------------------------------------------------"
     // )
 
-    //Убрать передачу cerrentExpressionNode, его можно брать из стека
+    //Убрать передачу currentExpressionNode, его можно брать из стека
 
     const [head, ...tail] = tokens
 

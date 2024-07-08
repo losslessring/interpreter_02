@@ -4,10 +4,10 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
-// src/scanner/splitToTokens/splitToTokens.test.js
-var splitToTokens_test_exports = {};
-__export(splitToTokens_test_exports, {
-  splitToTokens_test: () => splitToTokens_test
+// src/tree/walkThroughTree/walkThroughTree.test.js
+var walkThroughTree_test_exports = {};
+__export(walkThroughTree_test_exports, {
+  walkThroughTree_test: () => walkThroughTree_test
 });
 
 // node_modules/ramda/es/internal/_isPlaceholder.js
@@ -540,17 +540,26 @@ var logColors = {
   FgGray: "\x1B[90m"
 };
 var loggerFn = console.log;
+var LOG_LEVEL = "errors";
 var TestMatchers = class {
-  constructor({ actual, logColors: logColors2, logFn = console.log }) {
+  constructor({
+    actual,
+    logColors: logColors2,
+    logFn = console.log,
+    logLevel = LOG_LEVEL
+  }) {
     this.actual = actual;
     this.logFn = logFn;
     this.logColors = logColors2;
+    this.logLevel = logLevel;
   }
   toBe(expected) {
     if (equals_default(expected, this.actual)) {
-      this.logFn(
-        `${this.logColors.FgGreen}Succeeded${this.logColors.Reset}`
-      );
+      if (this.logLevel === "all") {
+        this.logFn(
+          `${this.logColors.FgGreen}Succeeded${this.logColors.Reset}`
+        );
+      }
     } else {
       this.logFn(
         `${this.logColors.FgRed}Test failed
@@ -582,23 +591,57 @@ ${this.logColors.Reset}`
 function expect(actual) {
   return new TestMatchers({ actual, logColors, logFn: loggerFn });
 }
-function describe(suiteName, fn, logFn = loggerFn) {
+function describe(suiteName, fn, logFn = loggerFn, logLevel = LOG_LEVEL) {
   try {
-    logFn(`suite: ${suiteName}`);
+    if (logLevel === "all") {
+      logFn(`suite: ${suiteName}`);
+    }
     fn();
   } catch (err) {
     logFn(`${logColors.FgRed}${err.message}${logColors.Reset}`);
   }
 }
-function it(testName, fn, logFn = loggerFn) {
-  logFn(`test: ${testName}`);
+function it(testName, fn, logFn = loggerFn, logLevel = LOG_LEVEL) {
+  if (logLevel === "all") {
+    logFn(`test: ${testName}`);
+  }
   try {
     fn();
   } catch (err) {
-    console.log(err.message);
+    logFn(`${logColors.FgRed}${err.message}${logColors.Reset}`);
     throw new Error("Test run failed");
   }
 }
+
+// src/tree/walkThroughTree/walkThroughTree.js
+function walkThroughTree({ tree }) {
+  if (tree.type === "expression") {
+    return ["(", tree.value[0]["value"], ")"];
+  }
+}
+
+// src/tree/walkThroughTree/walkThroughTree.test.js
+var walkThroughTree_test = () => {
+  describe("walk through tree", () => {
+    it("number type", () => {
+      const data = {
+        type: "expression",
+        value: [{ type: "number", value: "100" }]
+      };
+      const result = walkThroughTree({
+        tree: data
+      });
+      const expected = ["(", "100", ")"];
+      expect(result).toBe(expected);
+    });
+  });
+};
+
+// src/scanner/splitToTokens/splitToTokens.test.js
+var splitToTokens_test_exports = {};
+__export(splitToTokens_test_exports, {
+  splitToTokens_test: () => splitToTokens_test
+});
 
 // src/scanner/splitBy/splitBy.js
 function splitBy({ strings, delimiter }) {
@@ -909,7 +952,7 @@ var sum_test = () => {
 };
 
 // testsAutoImport.js
-var tests = { ...splitToTokens_test_exports, ...splitBy_test_exports, ...tokensToAST_test_exports, ...parseFunction_test_exports, ...parseExpression_test_exports, ...keepOnlyOneCharInRow_test_exports, ...sum_test_exports };
+var tests = { ...walkThroughTree_test_exports, ...splitToTokens_test_exports, ...splitBy_test_exports, ...tokensToAST_test_exports, ...parseFunction_test_exports, ...parseExpression_test_exports, ...keepOnlyOneCharInRow_test_exports, ...sum_test_exports };
 export {
   tests
 };
